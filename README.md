@@ -51,4 +51,10 @@ Hecho con HTML, CSS y JavaScript puro — sin frameworks, sin instalaciones, sin
 
 ---
 
+## 👩‍💻 Creado por
+
+**Analia Rojas** · [@amnrojas](https://github.com/amnrojas)
+
+---
+
 *Hecho con ❤️ y mucha pasión futbolera* ⚽🔥
