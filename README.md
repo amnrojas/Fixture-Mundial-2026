@@ -1,4 +1,4 @@
-# 🏆⚽ Copa del Mundio 2026 — Fixture Futbolero Interactivo
+# 🏆⚽ Copa del Mundo 2026 — Fixture Futbolero Interactivo
 
 > *48 selecciones. 3 países. 1 copa. Y vos con todo el fixture en la mano.*
 
