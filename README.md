@@ -21,8 +21,8 @@ Un fixture completo del **Mundial de Fútbol 2026** (Canadá 🇨🇦 · México
 
 | Versión | Link |
 |--------|------|
-| 🖥️ Desktop / Imprimible | [mundial2026-esp.html](./mundial2026-esp.html) |
-| 📱 Móvil | [mundial2026-movil-esp.html](./mundial2026-movil-esp.html) |
+| 🖥️ Desktop / Imprimible | [mundial2026-esp.html](https://amnrojas.github.io/Fixture-Mundial-2026/mundial2026-esp.html) |
+| 📱 Móvil | [mundial2026-movil-esp.html](https://amnrojas.github.io/Fixture-Mundial-2026/mundial2026-movil-esp.html) |
 
 ---
 
