@@ -1214,7 +1214,8 @@ async function fetchLiveScores() {
     const statusName = comp.status?.type?.name || '';
     const completed   = comp.status?.type?.completed === true;
     const isLive      = statusName.includes('PROGRESS') || statusName.includes('HALF') || statusName.includes('END_PERIOD');
-    const hasFinalScore = completed || isLive;
+    const isFinal     = completed || statusName.includes('FINAL') || statusName.includes('FULL_TIME') || statusName.includes('ENDED');
+    const hasFinalScore = isFinal || isLive;
 
     if (!hasFinalScore) return;
 

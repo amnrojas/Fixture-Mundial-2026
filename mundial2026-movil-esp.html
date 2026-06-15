@@ -986,7 +986,8 @@ async function fetchLiveScores(){
     if(!comp) return;
     const statusName=comp.status?.type?.name||'';
     const completed=comp.status?.type?.completed===true;
-    const isLive=statusName.includes('PROGRESS')||statusName.includes('HALF');
+    const isLive=statusName.includes('PROGRESS')||statusName.includes('HALF')||statusName.includes('END_PERIOD');
+    const isFinal=completed||statusName.includes('FINAL')||statusName.includes('FULL_TIME')||statusName.includes('ENDED');
 
     const home=comp.competitors?.find(c=>c.homeAway==='home');
     const away=comp.competitors?.find(c=>c.homeAway==='away');
@@ -1000,7 +1001,7 @@ async function fetchLiveScores(){
     // ── Group stage match? ──
     let mid=MATCH_LOOKUP[`${hn}|${an}`]||MATCH_LOOKUP[`${an}|${hn}`];
     if(mid){
-      if(!completed&&!isLive) return;
+      if(!isFinal&&!isLive) return;
       const match=MATCHES.find(m=>m.id===mid);
       if(!match) return;
       let sh=hs,sa=as_;
@@ -1023,7 +1024,7 @@ async function fetchLiveScores(){
       if(prev.h!==hn||prev.a!==an){ koTeams[mid]={h:hn,a:an}; updated=true; }
     }
     // Save scores once match is live or finished
-    if(completed||isLive){
+    if(isFinal||isLive){
       if(isLive) newLive.add(mid);
       const sh=hs, sa=as_;
       const prev=scores[mid]||{};
