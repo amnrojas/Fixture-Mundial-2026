@@ -784,8 +784,9 @@ function renderByDate() {
   });
 
   let html = '';
-  Object.keys(byDate).forEach(dt => {
-    const ms = byDate[dt];
+  const sortedDates = Object.keys(byDate).sort((a,b) => parseMatchDate(a) - parseMatchDate(b));
+  sortedDates.forEach(dt => {
+    const ms = byDate[dt].sort((a,b) => a.t.localeCompare(b.t));
     html += `<div class="day-block">
       <div class="day-header">
         <span>${dt}</span>
