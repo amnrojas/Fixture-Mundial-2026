@@ -803,10 +803,11 @@ function renderByDate() {
     ms.forEach(m => {
       const sc = getScore(m.id);
       const isMT = isMyTeam(m);
+      const isLive = liveMatchIds.has(m.id);
       const flag = TEAM_FLAGS[myTeam]||'';
       const dt = getDisplayTime(m.t, m.dt);
-      html += `<div class="sched-match" style="${isMT?'background:#f0fff0;border-left:3px solid #009a44;':''}">
-        <div class="match-time">${dt.time}${dt.dayMark}</div>
+      html += `<div class="sched-match" style="${isMT?'background:#f0fff0;border-left:3px solid #009a44;':''}${isLive?'border-left:3px solid #e53935;background:#fff8e1;':''}">
+        <div class="match-time">${dt.time}${dt.dayMark}${isLive?' <span style="color:#e53935;font-weight:900;font-size:0.8em">🔴 EN VIVO</span>':''}</div>
         <div class="grp-tag">${m.g}</div>
         <div class="team-home" style="text-align:right;font-weight:600">${m.h}${isMT&&m.h===myTeam?' '+flag:''}</div>
         <div class="score-box">

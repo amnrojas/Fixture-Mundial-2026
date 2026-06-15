@@ -718,7 +718,7 @@ function renderHoy(){
 
   // Today's matches
   const todayDt = getTodayDt();
-  const todayMs = MATCHES.filter(m=>m.dt===todayDt);
+  const todayMs = MATCHES.filter(m=>m.dt===todayDt).sort((a,b)=>a.t.localeCompare(b.t));
   let html = `<div class="today-date">📅 Hoy — ${todayDt}</div>`;
   if(todayMs.length===0){
     html += `<div class="no-matches"><span class="emoji">⏸️</span>No hay partidos programados para hoy.</div>`;
@@ -753,7 +753,7 @@ function selectDate(dt){
   renderDateMatches();
 }
 function renderDateMatches(){
-  const ms = MATCHES.filter(m=>m.dt===activeDate);
+  const ms = MATCHES.filter(m=>m.dt===activeDate).sort((a,b)=>a.t.localeCompare(b.t));
   document.getElementById('dateMatches').innerHTML = ms.map(m=>matchCardHTML(m,true)).join('');
 }
 
