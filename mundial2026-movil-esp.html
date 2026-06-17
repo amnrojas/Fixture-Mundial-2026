@@ -738,7 +738,7 @@ function getTodayDt(){
 // =====================================================
 // RENDER: BY DATE page
 // =====================================================
-const ALL_DATES = [...new Set(MATCHES.map(m=>m.dt))];
+const ALL_DATES = [...new Set(MATCHES.map(m=>m.dt))].sort((a,b)=>parseMatchDate(a)-parseMatchDate(b));
 
 function renderDateNav(){
   const nav = document.getElementById('dateNav');
