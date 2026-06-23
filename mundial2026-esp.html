@@ -642,6 +642,9 @@ function computePredictedR32() {
   return pred;
 }
 
+
+
+
 // =====================================================
 // STATE: Scores + My Team
 // =====================================================
@@ -892,11 +895,15 @@ function renderByDate() {
 function renderKnockout() {
   const cont = document.getElementById('knockoutStage');
   const pred = computePredictedR32();
-  let html = '';
-  // Leyenda
-  html += `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:8px 14px;background:#f8f9fc;border-radius:6px;margin-bottom:10px;font-size:0.78em">
+  function tStyle(st) {
+    return st==='espn' ? 'color:#006400;font-weight:900'
+         : st==='sure' ? 'color:#0a3d62;font-style:italic'
+         : st==='proj' ? 'color:#1a73c8;font-style:italic'
+         : 'color:#aaa;font-style:italic';
+  }
+  let html = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:8px 14px;background:#f8f9fc;border-radius:6px;margin-bottom:10px;font-size:0.78em">
     <span style="font-weight:700;color:#555">📊 Referencias:</span>
-    <span><span style="color:#006400;font-weight:900">■</span> Confirmado por ESPN</span>
+    <span><span style="color:#006400;font-weight:900">■</span> Confirmado ESPN</span>
     <span><span style="color:#0a3d62;font-style:italic">■</span> Grupo finalizado</span>
     <span><span style="color:#1a73c8;font-style:italic">■</span> Proyección parcial</span>
     <span><span style="color:#aaa;font-style:italic">■</span> Por definir</span>
@@ -909,6 +916,7 @@ function renderKnockout() {
     phase.matches.forEach(m => {
       const sc = getScore(m.id);
       const dt = getDisplayTime(m.t, m.dt);
+      const isMT_check = (h, a) => h === myTeam || a === myTeam;
       const flag = TEAM_FLAGS[myTeam] || '';
       let teamH, teamA, stH, stA;
       if (koTeams[m.id]) {
@@ -923,19 +931,12 @@ function renderKnockout() {
         teamH = m.h; teamA = m.a;
         stH = stA = 'label';
       }
-      const isMT = teamH === myTeam || teamA === myTeam;
-      function tStyle(name, st) {
-        if (st==='espn') return isMT&&name===myTeam?'color:#006400;font-weight:900':'';
-        if (st==='sure') return 'color:#0a3d62;font-style:italic';
-        if (st==='proj') return 'color:#1a73c8;font-style:italic';
-        return 'color:#aaa;font-style:italic';
-      }
-      const isUnknown = stH==='label' && stA==='label' && !pred[m.id];
-      const isProj = stH!=='espn' && stA!=='espn' && (stH!=='label' || stA!=='label' || pred[m.id]);
-      html += `<div class="ko-match" style="${isF||isMT?'background:#fffbea;border-color:#d4a017;':''}${isMT?'border-left:3px solid #009a44;':''}">
+      const isMT = isMT_check(teamH, teamA);
+      const isProj = !koTeams[m.id] && pred[m.id];
+      html += `<div class="ko-match" style="${isF||isMT ? 'background:#fffbea;border-color:#d4a017;' : ''}${isMT?'border-left:3px solid #009a44;':''}">
         <div class="ko-match-info">📅 ${dt.date}${dt.dayMark} · ⏰ ${dt.time}</div>
         <div class="ko-teams">
-          <div class="ko-team" style="${tStyle(teamH,stH)}">${teamH}${isMT&&teamH===myTeam?' '+flag:''}</div>
+          <div class="ko-team" style="${tStyle(stH)}${isMT&&teamH===myTeam?';font-weight:900':''}">${teamH}${isMT&&teamH===myTeam?' '+flag:''}</div>
           <div class="ko-score">
             <input class="score-input" type="number" min="0" max="99" value="${sc.h}"
               onchange="setScore('${m.id}','h',this.value)" placeholder="-">
@@ -943,11 +944,10 @@ function renderKnockout() {
             <input class="score-input" type="number" min="0" max="99" value="${sc.a}"
               onchange="setScore('${m.id}','a',this.value)" placeholder="-">
           </div>
-          <div class="ko-team" style="${tStyle(teamA,stA)}">${teamA}${isMT&&teamA===myTeam?' '+flag:''}</div>
+          <div class="ko-team" style="${tStyle(stA)}${isMT&&teamA===myTeam?';font-weight:900':''}">${teamA}${isMT&&teamA===myTeam?' '+flag:''}</div>
         </div>
         <div class="ko-stadium">🏟️ ${m.st} · ${m.ci}</div>
-        ${isUnknown?'<div style="font-size:0.72em;color:#aaa;text-align:center;margin-top:3px">⏳ Por definir</div>':
-          isProj?'<div style="font-size:0.72em;color:#1a73c8;text-align:center;margin-top:3px">📊 Proyección desde posiciones</div>':''}
+        ${isProj ? '<div style="font-size:0.72em;color:#1a73c8;text-align:center;margin-top:3px">📊 Proyección desde posiciones</div>' : !koTeams[m.id] ? '<div style="font-size:0.72em;color:#aaa;text-align:center;margin-top:3px">⏳ Por definir</div>' : ''}
       </div>`;
     });
     html += '</div></div>';
@@ -1382,4 +1382,32 @@ function updateStatusBar(state) {
   const refreshBtn = `<button onclick="fetchLiveScores()" style="
     background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);
     color:white;padding:2px 10px;border-radius:10px;cursor:pointer;font-size:0.82em;
-    margin-left:10px;f
+    margin-left:10px;font-weight:700">↻ Actualizar</button>`;
+  if (state === 'live') {
+    bar.style.background = '#009a44';
+    bar.innerHTML = `🔴 <b>PARTIDOS EN VIVO</b> — Actualizando cada 30 seg · Última actualización: ${t} ${refreshBtn}`;
+  } else if (state === 'error') {
+    bar.style.background = '#c8102e';
+    bar.innerHTML = `⚠️ Sin conexión con el servidor de resultados · Última actualización: ${t} ${refreshBtn}`;
+  } else {
+    bar.style.background = '#1a3a8f';
+    bar.innerHTML = `✅ Resultados actualizados automáticamente · Última actualización: ${t} ${refreshBtn}`;
+  }
+}
+
+// =====================================================
+// INIT
+// =====================================================
+document.getElementById('teamSelect').value = myTeam;
+document.getElementById('myTeamBadge').textContent = TEAM_FLAGS[myTeam]||'';
+updateTZBar();
+renderGroups();
+renderByDate();
+renderKnockout();
+renderPrint();
+// Start live score fetching
+fetchLiveScores();
+</script>
+
+</body>
+</html>

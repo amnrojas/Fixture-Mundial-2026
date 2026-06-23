@@ -883,9 +883,8 @@ function toggleGroupMatches(id, btn){
 // =====================================================
 function renderKnockout(){
   const pred = computePredictedR32();
-  let html = '';
-  // Legend
-  html += `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:#f8f9fc;border-radius:6px;margin-bottom:8px;font-size:0.74em">
+  function tStyle(st){ return st==='espn'?'color:#006400;font-weight:700':st==='sure'?'color:#0a3d62;font-style:italic':st==='proj'?'color:#1a73c8;font-style:italic':'color:#aaa;font-style:italic'; }
+  let html = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:#f8f9fc;border-radius:6px;margin-bottom:8px;font-size:0.74em">
     <span style="font-weight:700;color:#555">📊 Referencias:</span>
     <span><span style="color:#006400;font-weight:900">■</span> ESPN</span>
     <span><span style="color:#0a3d62;font-style:italic">■</span> Grupo fin.</span>
@@ -902,18 +901,15 @@ function renderKnockout(){
       const flag=TEAM_FLAGS[myTeam]||'⚽';
       let teamH, teamA, stH, stA;
       if(koTeams[m.id]){
-        teamH=koTeams[m.id].h; teamA=koTeams[m.id].a;
-        stH=stA='espn';
+        teamH=koTeams[m.id].h; teamA=koTeams[m.id].a; stH=stA='espn';
       } else if(pred[m.id]){
         const p=pred[m.id];
         teamH=p.h; teamA=p.a;
         stH=p.hSure?'sure':(p.hData?'proj':'label');
         stA=p.aSure?'sure':(p.aData?'proj':'label');
       } else {
-        teamH=m.h; teamA=m.a;
-        stH=stA='label';
+        teamH=m.h; teamA=m.a; stH=stA='label';
       }
-      function tStyle(st){ return st==='espn'?'color:#006400;font-weight:700':st==='sure'?'color:#0a3d62;font-style:italic':st==='proj'?'color:#1a73c8;font-style:italic':'color:#aaa;font-style:italic'; }
       const isMT=teamH===myTeam||teamA===myTeam;
       const isProj=!koTeams[m.id]&&pred[m.id]&&(stH!=='label'||stA!=='label');
       html += `<div class="match-card${isFinal||isMT?' paraguay':''}">
@@ -1148,4 +1144,34 @@ function updateLiveBar(state){
     document.getElementById('liveBar').style.background='#009a44';
     bar.textContent=`🔴 PARTIDOS EN VIVO · Actualización en 30 seg · ${t}`;
   } else if(state==='error'){
-    document.getElementById('liveBar').style.backgroun
+    document.getElementById('liveBar').style.background='#c8102e';
+    bar.textContent=`⚠️ Sin conexión · Última actualización: ${t}`;
+  } else {
+    document.getElementById('liveBar').style.background='#1a3a8f';
+    bar.textContent=`✅ Actualizado · ${t}`;
+  }
+}
+
+// =====================================================
+// INIT
+// =====================================================
+document.getElementById('teamSelect').value = myTeam;
+updateTZBar();
+renderHoy();
+renderGroupFilter();
+renderGroups();
+renderKnockout();
+fetchLiveScores();
+
+// Close modal on back button
+window.addEventListener('popstate', ()=>{
+  document.getElementById('modalOverlay').classList.add('hidden');
+});
+
+// Enter key in modal
+document.querySelectorAll('.modal-input').forEach(inp=>{
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') saveModal(); });
+});
+</script>
+</body>
+</html>
