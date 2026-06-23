@@ -596,7 +596,7 @@ function computePredictedR32() {
   Object.keys(GROUPS).forEach(grp => {
     const rows = calcStandings(grp);
     const totalPJ = rows.reduce((s, r) => s + r.pj, 0);
-    gd[grp] = { rows, totalPJ, full: totalPJ >= 6 };
+    gd[grp] = { rows, totalPJ, full: totalPJ >= 12 };
     if (rows.length >= 3) {
       const t = rows[2];
       thirdsAll.push({ grp, name: t.name, pts: t.pts, gd_: t.gd, gf: t.gf, gc: t.gc });
