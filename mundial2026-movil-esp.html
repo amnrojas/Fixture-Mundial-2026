@@ -271,6 +271,35 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f7;color:#1a1a2
   background:rgba(255,255,255,0.12);color:white;font-size:0.75em;font-weight:700;
   cursor:pointer;white-space:nowrap;
 }
+/* ===== BRACKET VIEW ===== */
+.bk-toggle{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.bk-btn{padding:5px 16px;border:2px solid #0a1f5c;border-radius:20px;cursor:pointer;font-size:.82em;font-weight:600;background:#fff;color:#0a1f5c;transition:all .2s}
+.bk-btn.on{background:#0a1f5c;color:#fff}
+.bk-tree{display:flex;overflow-x:auto;background:#edf1f8;border-radius:10px;padding:12px 8px 16px;gap:0;min-height:820px}
+.bk-col{display:flex;flex-direction:column;flex-shrink:0;width:164px}
+.bk-col-h{font-size:.71em;font-weight:700;text-align:center;background:#0a1f5c;color:#fff;border-radius:5px;padding:5px 4px;margin-bottom:4px;white-space:nowrap}
+.bk-col-b{display:flex;flex-direction:column;flex:1}
+.bk-group{display:flex;flex-direction:column;flex:2;position:relative}
+.bk-group.g16{flex:4}.bk-group.gqf{flex:8}.bk-group.gsf{flex:8}
+.bk-group::after{content:'';position:absolute;right:-10px;top:25%;height:50%;border-right:2px solid #b8c6dc;border-top:2px solid #b8c6dc;border-bottom:2px solid #b8c6dc;width:10px;z-index:2}
+.bk-group.no-conn::after{display:none}
+.bk-slot{flex:1;display:flex;align-items:center;padding:2px 2px 2px 0}
+.bk-conn{width:10px;flex-shrink:0;display:flex;flex-direction:column}
+.bk-ln{position:relative}.bk-ln::after{content:'';position:absolute;left:0;top:50%;width:10px;height:2px;background:#b8c6dc}
+.bk-ln.g2{flex:2}.bk-ln.g4{flex:4}.bk-ln.g8{flex:8}
+.bk-card{border:1.5px solid #d5dcea;border-radius:6px;background:#fff;padding:5px 7px;width:100%;box-sizing:border-box;font-size:.73em;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.bk-card.bkmt{border-color:#009a44!important;border-width:2px;background:#f0faf4}
+.bk-card.bkfin{border-color:#d4a017;border-width:2px;background:#fffbea}
+.bk-card.bksf{border-color:#0a1f5c;border-width:1.5px}
+.bk-card.bk3rd{border-color:#888}
+.bk-row{display:flex;justify-content:space-between;align-items:center;gap:3px;padding:1px 0}
+.bk-tn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-si{width:26px;border:1px solid #dde2ea;border-radius:3px;text-align:center;font-weight:700;padding:1px;background:#f8f9fc;font-size:.95em}
+.bk-si:focus{outline:none;border-color:#0a1f5c;background:#fff}
+.bk-dt{font-size:.76em;color:#b0b8c8;padding-top:2px;border-top:1px solid #f0f2f6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-fin-wrap{display:flex;flex-direction:column;justify-content:center;align-items:stretch;height:100%;gap:12px;padding:4px 2px}
+.bk-3rd-lbl{font-size:.69em;font-weight:700;color:#888;text-align:center;padding:6px 0 2px;border-top:1px solid #dde2ea;margin-top:8px}
+
 </style>
 </head>
 <body>
@@ -357,6 +386,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f7;color:#1a1a2
 </div>
 
 <div id="page-ko" class="page">
+  <div class="bk-toggle" style="padding:8px 12px 0">
+    <button class="bk-btn on" onclick="switchKOView('list',this)">📋 Lista</button>
+    <button class="bk-btn" onclick="switchKOView('bracket',this)">🏆 Bracket</button>
+  </div>
   <div id="knockoutContent"></div>
 </div>
 
@@ -607,6 +640,208 @@ function computePredictedR32() {
   mk('R32-16', lbl('K',1), slots3rd['1K']||'3\xb0 mejor K', 'K',null,false,true);
   return pred;
 }
+
+// =====================================================
+// PREDICCIÓN BRACKET COMPLETO (R16, QF, SF, Final)
+// Mapeo oficial FIFA 2026
+// =====================================================
+function computeFullBracket() {
+  // Step 1: R32 predictions from group standings
+  const base = computePredictedR32();
+
+  // Merge with ESPN-confirmed participants
+  const all = Object.assign({}, base);
+
+  // Get effective teams for any match
+  function getT(id) {
+    if (koTeams[id]) return { h: koTeams[id].h, a: koTeams[id].a, hS: true, aS: true, hD: true, aD: true };
+    const p = all[id];
+    if (p) return { h: p.h, a: p.a, hS: p.hSure||false, aS: p.aSure||false, hD: p.hData||false, aD: p.aData||false };
+    return { h: null, a: null, hS: false, aS: false, hD: false, aD: false };
+  }
+
+  // Get predicted winner of a match (null if no score)
+  function winner(id) {
+    const sc = scores[id];
+    if (!sc || sc.h === '' || sc.a === '') return null;
+    const sh = parseInt(sc.h), sa = parseInt(sc.a);
+    const t = getT(id);
+    if (sh > sa) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
+    if (sa > sh) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
+    return { name: null, sure: false, data: true }; // EPD
+  }
+
+  // Get predicted loser of a match (for 3rd place)
+  function loser(id) {
+    const sc = scores[id];
+    if (!sc || sc.h === '' || sc.a === '') return null;
+    const sh = parseInt(sc.h), sa = parseInt(sc.a);
+    const t = getT(id);
+    if (sh > sa) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
+    if (sa > sh) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
+    return { name: null, sure: false, data: true };
+  }
+
+  // Build a next-round match from two source-match winners
+  function advance(nextId, src1, src2) {
+    if (koTeams[nextId]) return; // ESPN confirmed
+    const w1 = winner(src1);
+    const w2 = winner(src2);
+    all[nextId] = {
+      h: w1 ? w1.name : null,
+      a: w2 ? w2.name : null,
+      hSure: w1 ? w1.sure : false,
+      aSure: w2 ? w2.sure : false,
+      hData: w1 ? w1.data : false,
+      aData: w2 ? w2.data : false,
+    };
+  }
+
+  // ── R16 (official FIFA 2026 bracket mapping) ──────────────────
+  advance('R16-1', 'R32-1',  'R32-4');   // M90: W(73) vs W(75)
+  advance('R16-2', 'R32-3',  'R32-6');   // M89: W(74) vs W(77)
+  advance('R16-3', 'R32-2',  'R32-5');   // M91: W(76) vs W(78)
+  advance('R16-4', 'R32-7',  'R32-8');   // M92: W(79) vs W(80)
+  advance('R16-5', 'R32-12', 'R32-11');  // M93: W(83) vs W(84)
+  advance('R16-6', 'R32-10', 'R32-9');   // M94: W(81) vs W(82)
+  advance('R16-7', 'R32-13', 'R32-15');  // M95: W(85) vs W(86)
+  advance('R16-8', 'R32-16', 'R32-14');  // M96: W(87) vs W(88)
+
+  // ── Cuartos de Final ─────────────────────────────────────────
+  advance('QF-1', 'R16-1', 'R16-2');
+  advance('QF-2', 'R16-3', 'R16-4');
+  advance('QF-3', 'R16-5', 'R16-6');
+  advance('QF-4', 'R16-7', 'R16-8');
+
+  // ── Semifinales (interleaved: SF1=QF1vsQF3, SF2=QF2vsQF4) ──
+  advance('SF-1', 'QF-1', 'QF-3');   // Dallas Jul 14 (top half)
+  advance('SF-2', 'QF-2', 'QF-4');   // Atlanta Jul 15 (bottom half)
+
+  // ── Tercer lugar (perdedores de SF) ─────────────────────────
+  if (!koTeams['3RD']) {
+    const l1 = loser('SF-1');
+    const l2 = loser('SF-2');
+    all['3RD'] = {
+      h: l1 ? l1.name : null, a: l2 ? l2.name : null,
+      hSure: l1 ? l1.sure : false, aSure: l2 ? l2.sure : false,
+      hData: l1 ? l1.data : false, aData: l2 ? l2.data : false,
+    };
+  }
+
+  // ── Final ───────────────────────────────────────────────────
+  advance('FIN', 'SF-1', 'SF-2');
+
+  return all;
+}
+
+// =====================================================
+// BRACKET VIEW
+// =====================================================
+let _bkMode = 'list';
+
+function switchKOView(mode, btn) {
+  _bkMode = mode;
+  document.querySelectorAll('.bk-btn').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  mode === 'bracket' ? renderBracketView() : renderKnockout();
+}
+
+function renderBracketView() {
+  const pred = computeFullBracket();
+  const allKO = KNOCKOUT.flatMap(p => p.matches);
+  const fm = id => allKO.find(m => m.id === id);
+  const tC = s => s==='espn'?'color:#006400;font-weight:700':s==='sure'?'color:#0a3d62;font-style:italic':s==='proj'?'color:#1a73c8;font-style:italic':'color:#aaa;font-style:italic';
+  const flag = TEAM_FLAGS[myTeam]||'';
+
+  function gts(id) {
+    if (koTeams[id]) return {h:koTeams[id].h,a:koTeams[id].a,sH:'espn',sA:'espn'};
+    if (pred[id]) { const p=pred[id]; return {h:p.h,a:p.a,sH:p.hSure?'sure':p.hData?'proj':'label',sA:p.aSure?'sure':p.aData?'proj':'label'}; }
+    const m=fm(id); return {h:m?.h||'?',a:m?.a||'?',sH:'label',sA:'label'};
+  }
+
+  function card(id, cls) {
+    const {h,a,sH,sA}=gts(id), sc=getScore(id), m=fm(id);
+    const dt=m?getDisplayTime(m.t,m.dt):{date:'–',time:'–',dayMark:''};
+    const mt=h===myTeam||a===myTeam;
+    const cc=`bk-card${mt?' bkmt':''}${cls?' '+cls:''}`;
+    return `<div class="${cc}">
+<div class="bk-row"><span class="bk-tn" style="${tC(sH)}">${h||'?'}${mt&&h===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.h}" placeholder="-" onchange="setScore('${id}','h',this.value)"></div>
+<div class="bk-row"><span class="bk-tn" style="${tC(sA)}">${a||'?'}${mt&&a===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.a}" placeholder="-" onchange="setScore('${id}','a',this.value)"></div>
+<div class="bk-dt">${dt.date}${dt.dayMark||''} · ${dt.time}</div>
+</div>`;
+  }
+
+  function grp(ids, gcls, gap) {
+    return `<div class="bk-group ${gcls}"${gap?' style="margin-top:16px"':''}>${ids.map(id=>`<div class="bk-slot">${card(id)}</div>`).join('')}</div>`;
+  }
+
+  function connCol(segs) {
+    // segs: [{cls, gap}]
+    return '<div class="bk-conn">' + segs.map(s=>`<div class="bk-ln ${s.cls}"${s.gap?' style="margin-top:16px"':''}></div>`).join('') + '</div>';
+  }
+
+  // Bracket order
+  const R32G = [
+    ['R32-1','R32-4'],['R32-3','R32-6'],['R32-2','R32-5'],['R32-7','R32-8'],
+    ['R32-12','R32-11'],['R32-10','R32-9'],['R32-13','R32-15'],['R32-16','R32-14']
+  ];
+  const R16G = [['R16-1','R16-2'],['R16-3','R16-4'],['R16-5','R16-6'],['R16-7','R16-8']];
+  const QFG  = [['QF-1','QF-2'],['QF-3','QF-4']];
+
+  const legend = `<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:.78em">
+<span style="font-weight:700;color:#555">📊 Referencias:</span>
+<span><span style="color:#006400;font-weight:900">■</span> Confirmado ESPN</span>
+<span><span style="color:#0a3d62;font-style:italic">■</span> Grupo finalizado</span>
+<span><span style="color:#1a73c8;font-style:italic">■</span> Proyección</span>
+<span><span style="color:#aaa;font-style:italic">■</span> Por definir</span>
+</div>`;
+
+  let h = legend + '<div class="bk-tree">';
+
+  // R32 column
+  h += '<div class="bk-col"><div class="bk-col-h">Ronda de 32</div><div class="bk-col-b">';
+  R32G.forEach((ids,gi) => { h += grp(ids,'g2',gi===4); });
+  h += '</div></div>';
+
+  // Connector R32→R16
+  h += connCol(R32G.map((_,gi)=>({cls:'g2',gap:gi===4})));
+
+  // R16 column
+  h += '<div class="bk-col"><div class="bk-col-h">Octavos</div><div class="bk-col-b">';
+  R16G.forEach((ids,gi) => { h += grp(ids,'g16',gi===2); });
+  h += '</div></div>';
+
+  // Connector R16→QF
+  h += connCol(R16G.map((_,gi)=>({cls:'g4',gap:gi===2})));
+
+  // QF column
+  h += '<div class="bk-col"><div class="bk-col-h">Cuartos</div><div class="bk-col-b">';
+  QFG.forEach((ids,gi) => { h += grp(ids,'gqf no-conn',gi===1); });
+  h += '</div></div>';
+
+  // Connector QF→SF
+  h += connCol([{cls:'g8',gap:false},{cls:'g8',gap:true}]);
+
+  // SF column
+  h += '<div class="bk-col"><div class="bk-col-h">Semis</div><div class="bk-col-b">';
+  h += grp(['SF-1'],'gsf no-conn',false);
+  h += grp(['SF-2'],'gsf no-conn',true);
+  h += '</div></div>';
+
+  // Final + 3rd column
+  h += '<div class="bk-col"><div class="bk-col-h">🏆 Final &amp; 3°</div>';
+  h += '<div class="bk-fin-wrap">';
+  h += card('FIN','bkfin');
+  h += '<div class="bk-3rd-lbl">🥉 Tercer Lugar · Miami · Jul 18</div>';
+  h += card('3RD','bk3rd');
+  h += '</div></div>';
+
+  h += '</div>';
+  const _kt=document.getElementById('knockoutStage')||document.getElementById('knockoutContent');if(_kt)_kt.innerHTML=h;
+}
+
+
+
 
 
 
@@ -882,7 +1117,7 @@ function toggleGroupMatches(id, btn){
 // RENDER: KNOCKOUT page
 // =====================================================
 function renderKnockout(){
-  const pred = computePredictedR32();
+  const pred = computeFullBracket();
   function tStyle(st){ return st==='espn'?'color:#006400;font-weight:700':st==='sure'?'color:#0a3d62;font-style:italic':st==='proj'?'color:#1a73c8;font-style:italic':'color:#aaa;font-style:italic'; }
   let html = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:#f8f9fc;border-radius:6px;margin-bottom:8px;font-size:0.74em">
     <span style="font-weight:700;color:#555">📊 Referencias:</span>
@@ -985,7 +1220,7 @@ function showPage(name, btn){
   btn.classList.add('active');
   if(name==='fecha'){ renderDateNav(); renderDateMatches(); }
   if(name==='grupos'){ renderGroupFilter(); renderGroups(); }
-  if(name==='ko') renderKnockout();
+  if(name==='ko') { if(_bkMode==='bracket') renderBracketView(); else renderKnockout(); }
 }
 
 function refreshAll(){
