@@ -1,0 +1,25 @@
+{
+  "name": "Fixture Mundial 2026",
+  "short_name": "Mundial 2026",
+  "description": "Fixture interactivo del Mundial de Fútbol 2026 con resultados en vivo",
+  "start_url": "./mundial2026-movil-esp.html",
+  "display": "standalone",
+  "background_color": "#0a1f5c",
+  "theme_color": "#0a1f5c",
+  "orientation": "portrait",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
