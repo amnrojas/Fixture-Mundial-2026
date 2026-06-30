@@ -697,11 +697,10 @@ function computeFullBracket() {
     const t = getT(id);
     if (sh > sa) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
     if (sa > sh) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
-    if (sc.penH !== undefined && sc.penA !== undefined) {
-      const ph = parseInt(sc.penH), pa = parseInt(sc.penA);
-      if (ph > pa) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
-      if (pa > ph) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
-    }
+    const pen = penScores[id];
+    if (pen) { const ph=parseInt(pen.h),pa=parseInt(pen.a);
+      if(ph>pa) return {name:t.h,sure:t.hS,data:Boolean(t.h)};
+      if(pa>ph) return {name:t.a,sure:t.aS,data:Boolean(t.a)}; }
     return { name: null, sure: false, data: true }; // EPD
   }
 
@@ -713,11 +712,10 @@ function computeFullBracket() {
     const t = getT(id);
     if (sh > sa) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
     if (sa > sh) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
-    if (sc.penH !== undefined && sc.penA !== undefined) {
-      const ph = parseInt(sc.penH), pa = parseInt(sc.penA);
-      if (ph > pa) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
-      if (pa > ph) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
-    }
+    const pen = penScores[id];
+    if (pen) { const ph=parseInt(pen.h),pa=parseInt(pen.a);
+      if(ph>pa) return {name:t.a,sure:t.aS,data:Boolean(t.a)};
+      if(pa>ph) return {name:t.h,sure:t.hS,data:Boolean(t.h)}; }
     return { name: null, sure: false, data: true };
   }
 
@@ -804,11 +802,11 @@ function renderBracketView() {
     const mt=h===myTeam||a===myTeam;
     const cc=`bk-card${mt?' bkmt':''}${cls?' '+cls:''}`;
     const fH=TEAM_FLAGS[h]||''; const fA=TEAM_FLAGS[a]||'';
-    const hasPen=sc.h!==''&&sc.a!==''&&sc.penH!==undefined&&sc.penA!==undefined;
+    const pen=penScores[id]; const hasSc=sc.h!==''&&sc.a!=='';
     return `<div class="${cc}">
 <div class="bk-row"><span class="bk-tn" style="${tC(sH)}">${fH} ${h||'?'}${mt&&h===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.h}" placeholder="-" onchange="setScore('${id}','h',this.value)"></div>
 <div class="bk-row"><span class="bk-tn" style="${tC(sA)}">${fA} ${a||'?'}${mt&&a===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.a}" placeholder="-" onchange="setScore('${id}','a',this.value)"></div>
-${hasPen?`<div class="pen-score">pen ${sc.penH}–${sc.penA}</div>`:''}
+${pen&&hasSc?`<div class="pen-score">pen ${pen.h}–${pen.a}</div>":''}
 <div class="bk-dt">${dt.date}${dt.dayMark||''} · ${dt.time} · 🏟 ${m?.st||''}</div>
 </div>`;
   }
@@ -832,7 +830,7 @@ ${hasPen?`<div class="pen-score">pen ${sc.penH}–${sc.penA}</div>`:''}
 
   const legend = `<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:.78em">
 <span style="font-weight:700;color:#555">📊 Referencias:</span>
-<span><span style="color:#006400;font-weight:900">■</span> Confirmado ESPN</span>
+<span><span style="color:#006400;font-weight:900">■</span> Confirmado oficial</span>
 <span><span style="color:#0a3d62;font-style:italic">■</span> Grupo finalizado</span>
 <span><span style="color:#1a73c8;font-style:italic">■</span> Proyección</span>
 <span><span style="color:#aaa;font-style:italic">■</span> Por definir</span>
@@ -893,17 +891,22 @@ ${hasPen?`<div class="pen-score">pen ${sc.penH}–${sc.penA}</div>`:''}
 // =====================================================
 const scores = {};
 const koTeams = {}; // auto-filled from ESPN: {id: {h:'Team A', a:'Team B'}}
-// Pre-load confirmed R32 results (penalty scores not in ESPN API)
+// penScores: separate object — immune to ESPN sync overwrites
+// h/a = pen goals of home/away team; h:'3',a:'4' → away wins
+const penScores = {
+  'R32-3':{h:'3',a:'4'},  // Alemania 3 – Paraguay 4 → Paraguay gana
+  'R32-4':{h:'2',a:'3'},  // Países Bajos 2 – Marruecos 3 → Marruecos gana
+};
 Object.assign(scores,{
   'R32-1':{h:'1',a:'0'},
   'R32-2':{h:'2',a:'1'},
-  'R32-3':{h:'1',a:'1',penH:'4',penA:'3'},
-  'R32-4':{h:'1',a:'1',penH:'2',penA:'3'},
+  'R32-3':{h:'1',a:'1'},
+  'R32-4':{h:'1',a:'1'},
 });
 Object.assign(koTeams,{
   'R32-1':{h:'Canadá',a:'Sudáfrica'},
   'R32-2':{h:'Brasil',a:'Japón'},
-  'R32-3':{h:'Paraguay',a:'Alemania'},
+  'R32-3':{h:'Alemania',a:'Paraguay'},
   'R32-4':{h:'Países Bajos',a:'Marruecos'},
   'R32-5':{h:'Costa de Marfil',a:'Noruega'},
   'R32-6':{h:'Francia',a:'Suecia'},
@@ -1002,7 +1005,7 @@ function changeMyTeam(team){
 function matchCardHTML(m, showGroup=true, groupLabel=null) {
   const sc = getScore(m.id);
   const hasScore = sc.h!==''&&sc.a!=='';
-  const hasPen = hasScore && sc.penH!==undefined && sc.penA!==undefined;
+  const pen = penScores[m.id];
   const isLive = liveMatchIds.has(m.id);
   const isMT = m.h===myTeam || m.a===myTeam;
   const flag = TEAM_FLAGS[myTeam]||'⚽';
@@ -1030,7 +1033,7 @@ function matchCardHTML(m, showGroup=true, groupLabel=null) {
       </div>
       <div class="team-name team-away">${flagA} ${m.a}${m.a===myTeam?' '+flag:''}</div>
     </div>
-    ${hasPen?`<div class="pen-score">pen ${sc.penH}–${sc.penA}</div>`:''}
+    ${pen&&hasScore?`<div class="pen-score">pen ${pen.h}–${pen.a}</div>`:''}
     ${hasScore?`<div class="match-footer">✅ Resultado guardado · Tocá para editar</div>`
                :`<div class="match-footer">✏️ Tocá para ingresar resultado</div>`}
   </div>`;
@@ -1085,11 +1088,25 @@ function renderHoy(){
   const rivals = getMyTeamRivals();
   const grpLabel = grp ? `Grupo ${grp} — ${rivals}` : 'Fase eliminatoria';
   const myMs = MATCHES.filter(isMyTeam);
+  // Also include KO matches where myTeam appears (confirmed or predicted)
+  const _bkt4my = computeFullBracket();
+  const _phTag = {'Ronda de 32':'R32','Octavos de Final':'OCT','Cuartos de Final':'QF','Semifinales':'SF','Tercer Lugar':'3er','🏆 FINAL':'🏆 FIN'};
+  const koMyList = [];
+  KNOCKOUT.forEach(ph=>{
+    const tag = _phTag[ph.phase]||ph.phase;
+    ph.matches.forEach(m=>{
+      const kt=koTeams[m.id]; const pred=_bkt4my[m.id];
+      const h4=kt?kt.h:(pred?pred.h:null); const a4=kt?kt.a:(pred?pred.a:null);
+      if(h4===myTeam||a4===myTeam)
+        koMyList.push({...m,h:h4||'Por definir',a:a4||'Por definir',_koTag:tag});
+    });
+  });
   let pyHTML = `<div class="py-matches-header">
     <div class="py-flag">${flag}</div>
     <div><h2>Partidos de ${myTeam}</h2><p>${grpLabel}</p></div>
   </div>`;
   myMs.forEach(m=>{ pyHTML += matchCardHTML(m,true); });
+  koMyList.forEach(m=>{ pyHTML += matchCardHTML(m,true,m._koTag); });
   document.getElementById('pyMatches').innerHTML = pyHTML;
 
   // Today's matches (group stage + knockout)
@@ -1207,7 +1224,7 @@ function renderKnockout(){
   function tStyle(st){ return st==='espn'?'color:#006400;font-weight:700':st==='sure'?'color:#0a3d62;font-style:italic':st==='proj'?'color:#1a73c8;font-style:italic':'color:#aaa;font-style:italic'; }
   let html = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:#f8f9fc;border-radius:6px;margin-bottom:8px;font-size:0.74em">
     <span style="font-weight:700;color:#555">📊 Referencias:</span>
-    <span><span style="color:#006400;font-weight:900">■</span> ESPN</span>
+    <span><span style="color:#006400;font-weight:900">■</span> Confirmado</span>
     <span><span style="color:#0a3d62;font-style:italic">■</span> Grupo fin.</span>
     <span><span style="color:#1a73c8;font-style:italic">■</span> Proyección</span>
     <span><span style="color:#aaa;font-style:italic">■</span> Por definir</span>
@@ -1233,7 +1250,7 @@ function renderKnockout(){
       }
       const isMT=teamH===myTeam||teamA===myTeam;
       const isProj=!koTeams[m.id]&&pred[m.id]&&(stH!=='label'||stA!=='label');
-      const hasPen = hasScore && sc.penH!==undefined && sc.penA!==undefined;
+      const pen = penScores[m.id];
       const fH = TEAM_FLAGS[teamH]||''; const fA = TEAM_FLAGS[teamA]||'';
       html += `<div class="match-card${isFinal||isMT?' paraguay':''}">
         <div class="match-card-header">
@@ -1249,7 +1266,7 @@ function renderKnockout(){
           </div>
           <div class="team-name team-away" style="${tStyle(stA)}">${fA} ${teamA}${isMT&&teamA===myTeam?' '+flag:''}</div>
         </div>
-        ${hasPen?`<div class="pen-score">pen ${sc.penH}–${sc.penA}</div>`:''}
+        ${pen&&hasScore?`<div class="pen-score">pen ${pen.h}–${pen.a}</div>`:''}
         <div class="match-footer">${koTeams[m.id]?(hasScore?'✅ Resultado guardado · Tocá para editar':'✏️ Tocá para ingresar resultado'):isProj?'📊 Proyección · Tocá para confirmar resultado':'⏳ Equipos por definir'}</div>
       </div>`;
     });
@@ -1285,8 +1302,9 @@ function openModal(id, type='group'){
     penSec.classList.remove('hidden');
     document.getElementById('penHomeLabel').textContent=homeLabel;
     document.getElementById('penAwayLabel').textContent=awayLabel;
-    document.getElementById('modalPenH').value=sc.penH!==undefined?sc.penH:'';
-    document.getElementById('modalPenA').value=sc.penA!==undefined?sc.penA:'';
+    const pen=penScores[id]||{};
+    document.getElementById('modalPenH').value=pen.h!==undefined?pen.h:'';
+    document.getElementById('modalPenA').value=pen.a!==undefined?pen.a:'';
   } else { penSec.classList.add('hidden'); }
   document.getElementById('modalOverlay').classList.remove('hidden');
   setTimeout(()=>document.getElementById('modalScoreH').focus(),200);
@@ -1300,13 +1318,11 @@ function saveModal(){
   if(!modalMatchId) return;
   const h=document.getElementById('modalScoreH').value;
   const a=document.getElementById('modalScoreA').value;
-  if(h!==''&&a!==''){
-    const sc={h,a};
-    const ph=document.getElementById('modalPenH').value;
-    const pa=document.getElementById('modalPenA').value;
-    if(ph!==''&&pa!==''){ sc.penH=ph; sc.penA=pa; }
-    scores[modalMatchId]=sc;
-  }
+  if(h!==''&&a!=='') scores[modalMatchId]={h,a};
+  const ph=document.getElementById('modalPenH').value;
+  const pa=document.getElementById('modalPenA').value;
+  if(ph!==''&&pa!=='') penScores[modalMatchId]={h:ph,a:pa};
+  else delete penScores[modalMatchId];
   document.getElementById('modalOverlay').classList.add('hidden');
   modalMatchId=null;
   refreshAll();

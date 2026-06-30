@@ -703,11 +703,10 @@ function computeFullBracket() {
     const t = getT(id);
     if (sh > sa) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
     if (sa > sh) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
-    if (sc.penH !== undefined && sc.penA !== undefined) {
-      const ph = parseInt(sc.penH), pa = parseInt(sc.penA);
-      if (ph > pa) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
-      if (pa > ph) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
-    }
+    const pen=penScores[id];
+    if(pen){const ph=parseInt(pen.h),pa=parseInt(pen.a);
+      if(ph>pa)return{name:t.h,sure:t.hS,data:Boolean(t.h)};
+      if(pa>ph)return{name:t.a,sure:t.aS,data:Boolean(t.a)};}
     return { name: null, sure: false, data: true }; // EPD
   }
 
@@ -719,11 +718,10 @@ function computeFullBracket() {
     const t = getT(id);
     if (sh > sa) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
     if (sa > sh) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
-    if (sc.penH !== undefined && sc.penA !== undefined) {
-      const ph = parseInt(sc.penH), pa = parseInt(sc.penA);
-      if (ph > pa) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
-      if (pa > ph) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
-    }
+    const pen=penScores[id];
+    if(pen){const ph=parseInt(pen.h),pa=parseInt(pen.a);
+      if(ph>pa)return{name:t.a,sure:t.aS,data:Boolean(t.a)};
+      if(pa>ph)return{name:t.h,sure:t.hS,data:Boolean(t.h)};}
     return { name: null, sure: false, data: true };
   }
 
@@ -835,7 +833,7 @@ function renderBracketView() {
 
   const legend = `<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:.78em">
 <span style="font-weight:700;color:#555">📊 Referencias:</span>
-<span><span style="color:#006400;font-weight:900">■</span> Confirmado ESPN</span>
+<span><span style="color:#006400;font-weight:900">■</span> Confirmado oficial</span>
 <span><span style="color:#0a3d62;font-style:italic">■</span> Grupo finalizado</span>
 <span><span style="color:#1a73c8;font-style:italic">■</span> Proyección</span>
 <span><span style="color:#aaa;font-style:italic">■</span> Por definir</span>
@@ -896,19 +894,15 @@ function renderBracketView() {
 // =====================================================
 const scores = {};
 const koTeams = {}; // auto-filled from ESPN: {id: {h:'Team A', a:'Team B'}}
-Object.assign(scores,{
-  'R32-1':{h:'1',a:'0'},
-  'R32-2':{h:'2',a:'1'},
-  'R32-3':{h:'1',a:'1',penH:'4',penA:'3'},
-  'R32-4':{h:'1',a:'1',penH:'2',penA:'3'},
-});
+const penScores = {
+  'R32-3':{h:'3',a:'4'},
+  'R32-4':{h:'2',a:'3'},
+};
+Object.assign(scores,{'R32-1':{h:'1',a:'0'},'R32-2':{h:'2',a:'1'},'R32-3':{h:'1',a:'1'},'R32-4':{h:'1',a:'1'}});
 Object.assign(koTeams,{
-  'R32-1':{h:'Canadá',a:'Sudáfrica'},
-  'R32-2':{h:'Brasil',a:'Japón'},
-  'R32-3':{h:'Paraguay',a:'Alemania'},
-  'R32-4':{h:'Países Bajos',a:'Marruecos'},
-  'R32-5':{h:'Costa de Marfil',a:'Noruega'},
-  'R32-6':{h:'Francia',a:'Suecia'},
+  'R32-1':{h:'Canadá',a:'Sudáfrica'},'R32-2':{h:'Brasil',a:'Japón'},
+  'R32-3':{h:'Alemania',a:'Paraguay'},'R32-4':{h:'Países Bajos',a:'Marruecos'},
+  'R32-5':{h:'Costa de Marfil',a:'Noruega'},'R32-6':{h:'Francia',a:'Suecia'},
   'R32-7':{h:'México',a:'Ecuador'},
 });
 function getScore(id) {
@@ -1145,8 +1139,6 @@ function renderByDate() {
       const hName = isKO ? (m._hPred || 'Por definir') : m.h;
       const aName = isKO ? (m._aPred || 'Por definir') : m.a;
       const tag = isKO ? m._koTag : m.g;
-      const sc_pd = getScore(m.id);
-      const hasPen_pd = sc_pd.h!==''&&sc_pd.a!==''&&sc_pd.penH!==undefined&&sc_pd.penA!==undefined;
       const isMT = hName===myTeam || aName===myTeam;
       const isLive = liveMatchIds.has(m.id);
       const flag = TEAM_FLAGS[myTeam]||'';
@@ -1185,7 +1177,7 @@ function renderKnockout() {
   }
   let html = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:8px 14px;background:#f8f9fc;border-radius:6px;margin-bottom:10px;font-size:0.78em">
     <span style="font-weight:700;color:#555">📊 Referencias:</span>
-    <span><span style="color:#006400;font-weight:900">■</span> Confirmado ESPN</span>
+    <span><span style="color:#006400;font-weight:900">■</span> Confirmado oficial</span>
     <span><span style="color:#0a3d62;font-style:italic">■</span> Grupo finalizado</span>
     <span><span style="color:#1a73c8;font-style:italic">■</span> Proyección parcial</span>
     <span><span style="color:#aaa;font-style:italic">■</span> Por definir</span>
