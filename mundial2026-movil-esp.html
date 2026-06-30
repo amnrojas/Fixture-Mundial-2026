@@ -806,7 +806,7 @@ function renderBracketView() {
     return `<div class="${cc}">
 <div class="bk-row"><span class="bk-tn" style="${tC(sH)}">${fH} ${h||'?'}${mt&&h===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.h}" placeholder="-" onchange="setScore('${id}','h',this.value)"></div>
 <div class="bk-row"><span class="bk-tn" style="${tC(sA)}">${fA} ${a||'?'}${mt&&a===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.a}" placeholder="-" onchange="setScore('${id}','a',this.value)"></div>
-${pen&&hasSc?`<div class="pen-score">pen ${pen.h}–${pen.a}</div>":''}
+${pen&&hasSc?`<div class="pen-score">pen ${pen.h}–${pen.a}</div>`:''}
 <div class="bk-dt">${dt.date}${dt.dayMark||''} · ${dt.time} · 🏟 ${m?.st||''}</div>
 </div>`;
   }

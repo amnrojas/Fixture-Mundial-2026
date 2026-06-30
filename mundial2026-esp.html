@@ -359,7 +359,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--gris); colo
 .bk-tn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bk-si{width:26px;border:1px solid #dde2ea;border-radius:3px;text-align:center;font-weight:700;padding:1px;background:#f8f9fc;font-size:.95em}
 .bk-si:focus{outline:none;border-color:#0a1f5c;background:#fff}
-.bk-dt{font-size:.76em;color:#b0b8c8;padding-top:2px;border-top:1px solid #f0f2f6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-dt{font-size:.76em;color:#555;font-weight:500;padding-top:2px;border-top:1px solid #f0f2f6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bk-fin-wrap{display:flex;flex-direction:column;justify-content:center;align-items:stretch;height:100%;gap:12px;padding:4px 2px}
 .bk-3rd-lbl{font-size:.69em;font-weight:700;color:#888;text-align:center;padding:6px 0 2px;border-top:1px solid #dde2ea;margin-top:8px}
 
@@ -415,6 +415,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--gris); colo
 
 <!-- ===== TAB: GRUPOS ===== -->
 <div id="tab-grupos" class="tab-content active">
+  <div id="hoyKO" style="margin-bottom:12px"></div>
   <div class="groups-grid" id="groupsGrid"></div>
 </div>
 
@@ -807,10 +808,13 @@ function renderBracketView() {
     const dt=m?getDisplayTime(m.t,m.dt):{date:'–',time:'–',dayMark:''};
     const mt=h===myTeam||a===myTeam;
     const cc=`bk-card${mt?' bkmt':''}${cls?' '+cls:''}`;
+    const fH=TEAM_FLAGS[h]||''; const fA=TEAM_FLAGS[a]||'';
+    const pen=penScores[id]; const hasSc=sc.h!==''&&sc.a!=='';
     return `<div class="${cc}">
-<div class="bk-row"><span class="bk-tn" style="${tC(sH)}">${h||'?'}${mt&&h===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.h}" placeholder="-" onchange="setScore('${id}','h',this.value)"></div>
-<div class="bk-row"><span class="bk-tn" style="${tC(sA)}">${a||'?'}${mt&&a===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.a}" placeholder="-" onchange="setScore('${id}','a',this.value)"></div>
-<div class="bk-dt">${dt.date}${dt.dayMark||''} · ${dt.time}</div>
+<div class="bk-row"><span class="bk-tn" style="${tC(sH)}">${fH} ${h||'?'}${mt&&h===myTeam?' ★':''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.h}" placeholder="-" onchange="setScore('${id}','h',this.value)"></div>
+<div class="bk-row"><span class="bk-tn" style="${tC(sA)}">${fA} ${a||'?'}${mt&&a===myTeam?' ★':''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.a}" placeholder="-" onchange="setScore('${id}','a',this.value)"></div>
+${pen&&hasSc?`<div class="pen-score">pen ${pen.h}–${pen.a}</div>`:''}
+<div class="bk-dt">${dt.date}${dt.dayMark||''} · ${dt.time} · 🏟 ${m?.st||''}</div>
 </div>`;
   }
 
@@ -1097,6 +1101,61 @@ function renderGroupMatches(grp) {
 }
 
 // =====================================================
+// RENDER: HOY KO (today's KO matches for myTeam)
+// =====================================================
+function renderHoyKO() {
+  const cont = document.getElementById('hoyKO');
+  if (!cont) return;
+  const todayStr = new Date().toLocaleDateString('es-PY',{day:'2-digit',month:'2-digit',year:'numeric'}).split('/').join('/');
+  // Get today's date in dd/mm/yyyy matching match.dt format
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  const todayDt = `${dd}/${mm}/${yyyy}`;
+
+  const _bkt = computeFullBracket();
+  const _phTag = {'Ronda de 32':'R32','Octavos de Final':'OCT','Cuartos de Final':'QF','Semifinales':'SF','Tercer Lugar':'3er','🏆 FINAL':'🏆 FINAL'};
+  const koMyList = [];
+  KNOCKOUT.forEach(ph => {
+    const tag = _phTag[ph.phase] || ph.phase;
+    ph.matches.forEach(m => {
+      if (m.dt !== todayDt) return;
+      const kt = koTeams[m.id]; const pred = _bkt[m.id];
+      const h4 = kt ? kt.h : (pred ? pred.h : null);
+      const a4 = kt ? kt.a : (pred ? pred.a : null);
+      if (h4 === myTeam || a4 === myTeam)
+        koMyList.push({...m, h: h4||'Por definir', a: a4||'Por definir', _koTag: tag});
+    });
+  });
+  if (!koMyList.length) { cont.innerHTML=''; return; }
+  const flag = TEAM_FLAGS[myTeam]||'⚽';
+  let html = `<div style="background:#e8f5e9;border:2px solid #009a44;border-radius:8px;padding:10px 14px;margin-bottom:4px">
+    <div style="font-weight:700;color:#006400;margin-bottom:8px">${flag} ${myTeam} hoy — Fase Eliminatoria</div>`;
+  koMyList.forEach(m => {
+    const sc = getScore(m.id);
+    const dt = getDisplayTime(m.t, m.dt);
+    const fH = TEAM_FLAGS[m.h]||''; const fA = TEAM_FLAGS[m.a]||'';
+    const pen = penScores[m.id]; const hasSc = sc.h!==''&&sc.a!=='';
+    html += `<div style="background:#fff;border-radius:6px;padding:8px 12px;margin-bottom:6px;border-left:3px solid #009a44">
+      <div style="font-size:0.78em;color:#555;margin-bottom:4px">📅 ${dt.date} · ⏰ ${dt.time} · <span style="color:#1a3a8f;font-weight:700">${m._koTag}</span> · 🏟 ${m.st}</div>
+      <div style="display:flex;align-items:center;gap:8px;font-weight:600">
+        <span style="flex:1;text-align:right">${fH} ${m.h}</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input class="score-input" type="number" min="0" max="99" value="${sc.h}" onchange="setScore('${m.id}','h',this.value)" placeholder="-" style="width:36px">
+          <span>:</span>
+          <input class="score-input" type="number" min="0" max="99" value="${sc.a}" onchange="setScore('${m.id}','a',this.value)" placeholder="-" style="width:36px">
+        </div>
+        <span style="flex:1">${fA} ${m.a}</span>
+      </div>
+      ${pen&&hasSc?`<div class="pen-score">pen ${pen.h}–${pen.a}</div>`:''}
+    </div>`;
+  });
+  html += '</div>';
+  cont.innerHTML = html;
+}
+
+// =====================================================
 // RENDER: BY DATE TAB
 // =====================================================
 function renderByDate() {
@@ -1210,7 +1269,7 @@ function renderKnockout() {
       html += `<div class="ko-match" style="${isF||isMT ? 'background:#fffbea;border-color:#d4a017;' : ''}${isMT?'border-left:3px solid #009a44;':''}">
         <div class="ko-match-info">📅 ${dt.date}${dt.dayMark} · ⏰ ${dt.time}</div>
         <div class="ko-teams">
-          <div class="ko-team" style="${tStyle(stH)}${isMT&&teamH===myTeam?';font-weight:900':''}">${teamH}${isMT&&teamH===myTeam?' '+flag:''}</div>
+          <div class="ko-team" style="${tStyle(stH)}${isMT&&teamH===myTeam?';font-weight:900':''}">${TEAM_FLAGS[teamH]||''} ${teamH}${isMT&&teamH===myTeam?' ★':''}</div>
           <div class="ko-score">
             <input class="score-input" type="number" min="0" max="99" value="${sc.h}"
               onchange="setScore('${m.id}','h',this.value)" placeholder="-">
@@ -1218,10 +1277,11 @@ function renderKnockout() {
             <input class="score-input" type="number" min="0" max="99" value="${sc.a}"
               onchange="setScore('${m.id}','a',this.value)" placeholder="-">
           </div>
-          <div class="ko-team" style="${tStyle(stA)}${isMT&&teamA===myTeam?';font-weight:900':''}">${teamA}${isMT&&teamA===myTeam?' '+flag:''}</div>
+          <div class="ko-team" style="${tStyle(stA)}${isMT&&teamA===myTeam?';font-weight:900':''}">${TEAM_FLAGS[teamA]||''} ${teamA}${isMT&&teamA===myTeam?' ★':''}</div>
         </div>
         <div class="ko-stadium">🏟️ ${m.st} · ${m.ci}</div>
         ${isProj ? '<div style="font-size:0.72em;color:#1a73c8;text-align:center;margin-top:3px">📊 Proyección desde posiciones</div>' : !koTeams[m.id] ? '<div style="font-size:0.72em;color:#aaa;text-align:center;margin-top:3px">⏳ Por definir</div>' : ''}
+        ${koTeams[m.id]&&sc.h===sc.a&&sc.h!=='' ? `<div style="font-size:0.78em;color:#555;text-align:center;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px"><span>⚽ Pen:</span><input class="score-input" style="width:36px" type="number" min="0" max="30" value="${(penScores[m.id]||{}).h||''}" onchange="savePen('${m.id}','h',this.value)" placeholder="-"><span>:</span><input class="score-input" style="width:36px" type="number" min="0" max="30" value="${(penScores[m.id]||{}).a||''}" onchange="savePen('${m.id}','a',this.value)" placeholder="-"></div>` : ''}
       </div>`;
     });
     html += '</div></div>';
@@ -1468,6 +1528,12 @@ function renderPrint() {
 // =====================================================
 // SCORE ENTRY (manual)
 // =====================================================
+function savePen(id, side, val) {
+  if (!penScores[id]) penScores[id] = {h:'',a:''};
+  penScores[id][side] = val;
+  renderAll();
+}
+
 function setScore(id, side, val) {
   if (!scores[id]) scores[id] = {h: '', a: ''};
   scores[id][side] = val === '' ? '' : val;
@@ -1478,6 +1544,7 @@ function refreshAll() {
   const badge = document.getElementById('myTeamBadge');
   if(badge) badge.textContent = TEAM_FLAGS[myTeam]||'';
   updateTZBar();
+  renderHoyKO();
   renderGroups();
   renderByDate();
   if (_bkMode === 'bracket') renderBracketView(); else renderKnockout();
