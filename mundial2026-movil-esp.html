@@ -209,6 +209,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f7;color:#1a1a2
 }
 .gf-btn.active{background:var(--azul);color:white;border-color:var(--azul)}
 
+.pen-score{font-size:.72em;color:#444;text-align:center;margin-top:1px;font-weight:600}
 /* ===== KNOCKOUT ===== */
 .ko-phase-title{
   display:flex;align-items:center;gap:8px;margin:16px 0 8px;
@@ -302,7 +303,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f7;color:#1a1a2
 .bk-tn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bk-si{width:26px;border:1px solid #dde2ea;border-radius:3px;text-align:center;font-weight:700;padding:1px;background:#f8f9fc;font-size:.95em}
 .bk-si:focus{outline:none;border-color:#0a1f5c;background:#fff}
-.bk-dt{font-size:.76em;color:#b0b8c8;padding-top:2px;border-top:1px solid #f0f2f6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-dt{font-size:.76em;color:#555;font-weight:500;padding-top:2px;border-top:1px solid #f0f2f6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bk-fin-wrap{display:flex;flex-direction:column;justify-content:center;align-items:stretch;height:100%;gap:12px;padding:4px 2px}
 .bk-3rd-lbl{font-size:.69em;font-weight:700;color:#888;text-align:center;padding:6px 0 2px;border-top:1px solid #dde2ea;margin-top:8px}
 
@@ -430,6 +431,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f7;color:#1a1a2
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-save" onclick="saveModal()">✓ Guardar</button>
+    </div>
+    <div id="penaltySection" class="hidden" style="margin-top:10px;padding:10px;background:#fff8e1;border-radius:8px;border:1px solid #f0c040">
+      <div style="font-size:.8em;color:#555;margin-bottom:6px;text-align:center">⚽ Penales (desempate)</div>
+      <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+        <span id="penHomeLabel" style="font-size:.8em;flex:1;text-align:right"></span>
+        <input id="modalPenH" type="number" min="0" max="20" class="score-box filled" style="width:48px" placeholder="-">
+        <span style="font-weight:900;color:#aaa">:</span>
+        <input id="modalPenA" type="number" min="0" max="20" class="score-box filled" style="width:48px" placeholder="-">
+        <span id="penAwayLabel" style="font-size:.8em;flex:1;text-align:left"></span>
+      </div>
     </div>
     <button class="btn-clear" onclick="clearModal()">✕ Borrar resultado</button>
   </div>
@@ -686,6 +697,11 @@ function computeFullBracket() {
     const t = getT(id);
     if (sh > sa) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
     if (sa > sh) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
+    if (sc.penH !== undefined && sc.penA !== undefined) {
+      const ph = parseInt(sc.penH), pa = parseInt(sc.penA);
+      if (ph > pa) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
+      if (pa > ph) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
+    }
     return { name: null, sure: false, data: true }; // EPD
   }
 
@@ -697,6 +713,11 @@ function computeFullBracket() {
     const t = getT(id);
     if (sh > sa) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
     if (sa > sh) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
+    if (sc.penH !== undefined && sc.penA !== undefined) {
+      const ph = parseInt(sc.penH), pa = parseInt(sc.penA);
+      if (ph > pa) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
+      if (pa > ph) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
+    }
     return { name: null, sure: false, data: true };
   }
 
@@ -782,10 +803,13 @@ function renderBracketView() {
     const dt=m?getDisplayTime(m.t,m.dt):{date:'–',time:'–',dayMark:''};
     const mt=h===myTeam||a===myTeam;
     const cc=`bk-card${mt?' bkmt':''}${cls?' '+cls:''}`;
+    const fH=TEAM_FLAGS[h]||''; const fA=TEAM_FLAGS[a]||'';
+    const hasPen=sc.h!==''&&sc.a!==''&&sc.penH!==undefined&&sc.penA!==undefined;
     return `<div class="${cc}">
-<div class="bk-row"><span class="bk-tn" style="${tC(sH)}">${h||'?'}${mt&&h===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.h}" placeholder="-" onchange="setScore('${id}','h',this.value)"></div>
-<div class="bk-row"><span class="bk-tn" style="${tC(sA)}">${a||'?'}${mt&&a===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.a}" placeholder="-" onchange="setScore('${id}','a',this.value)"></div>
-<div class="bk-dt">${dt.date}${dt.dayMark||''} · ${dt.time}</div>
+<div class="bk-row"><span class="bk-tn" style="${tC(sH)}">${fH} ${h||'?'}${mt&&h===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.h}" placeholder="-" onchange="setScore('${id}','h',this.value)"></div>
+<div class="bk-row"><span class="bk-tn" style="${tC(sA)}">${fA} ${a||'?'}${mt&&a===myTeam?' '+flag:''}</span><input class="bk-si" type="number" min="0" max="99" value="${sc.a}" placeholder="-" onchange="setScore('${id}','a',this.value)"></div>
+${hasPen?`<div class="pen-score">pen ${sc.penH}–${sc.penA}</div>`:''}
+<div class="bk-dt">${dt.date}${dt.dayMark||''} · ${dt.time} · 🏟 ${m?.st||''}</div>
 </div>`;
   }
 
@@ -869,6 +893,22 @@ function renderBracketView() {
 // =====================================================
 const scores = {};
 const koTeams = {}; // auto-filled from ESPN: {id: {h:'Team A', a:'Team B'}}
+// Pre-load confirmed R32 results (penalty scores not in ESPN API)
+Object.assign(scores,{
+  'R32-1':{h:'1',a:'0'},
+  'R32-2':{h:'2',a:'1'},
+  'R32-3':{h:'1',a:'1',penH:'4',penA:'3'},
+  'R32-4':{h:'1',a:'1',penH:'2',penA:'3'},
+});
+Object.assign(koTeams,{
+  'R32-1':{h:'Canadá',a:'Sudáfrica'},
+  'R32-2':{h:'Brasil',a:'Japón'},
+  'R32-3':{h:'Paraguay',a:'Alemania'},
+  'R32-4':{h:'Países Bajos',a:'Marruecos'},
+  'R32-5':{h:'Costa de Marfil',a:'Noruega'},
+  'R32-6':{h:'Francia',a:'Suecia'},
+  'R32-7':{h:'México',a:'Ecuador'},
+});
 let liveMatchIds = new Set();
 let modalMatchId = null;
 let activeGroup = 'ALL';
@@ -962,9 +1002,12 @@ function changeMyTeam(team){
 function matchCardHTML(m, showGroup=true, groupLabel=null) {
   const sc = getScore(m.id);
   const hasScore = sc.h!==''&&sc.a!=='';
+  const hasPen = hasScore && sc.penH!==undefined && sc.penA!==undefined;
   const isLive = liveMatchIds.has(m.id);
   const isMT = m.h===myTeam || m.a===myTeam;
   const flag = TEAM_FLAGS[myTeam]||'⚽';
+  const flagH = TEAM_FLAGS[m.h]||'';
+  const flagA = TEAM_FLAGS[m.a]||'';
   const dt = getDisplayTime(m.t, m.dt);
   let cardClass = 'match-card';
   if(isMT) cardClass += ' paraguay';
@@ -979,14 +1022,15 @@ function matchCardHTML(m, showGroup=true, groupLabel=null) {
         : `<span class="time">${dt.time}</span>`}
     </div>
     <div class="match-body" onclick="openModal('${m.id}')" style="cursor:pointer">
-      <div class="team-name team-home">${m.h}${m.h===myTeam?' '+flag:''}</div>
+      <div class="team-name team-home">${flagH} ${m.h}${m.h===myTeam?' '+flag:''}</div>
       <div class="score-area">
         <div class="score-box ${hasScore?'filled':''}">${hasScore?sc.h:''}</div>
         <span class="score-colon">:</span>
         <div class="score-box ${hasScore?'filled':''}">${hasScore?sc.a:''}</div>
       </div>
-      <div class="team-name team-away">${m.a}${m.a===myTeam?' '+flag:''}</div>
+      <div class="team-name team-away">${flagA} ${m.a}${m.a===myTeam?' '+flag:''}</div>
     </div>
+    ${hasPen?`<div class="pen-score">pen ${sc.penH}–${sc.penA}</div>`:''}
     ${hasScore?`<div class="match-footer">✅ Resultado guardado · Tocá para editar</div>`
                :`<div class="match-footer">✏️ Tocá para ingresar resultado</div>`}
   </div>`;
@@ -1189,20 +1233,23 @@ function renderKnockout(){
       }
       const isMT=teamH===myTeam||teamA===myTeam;
       const isProj=!koTeams[m.id]&&pred[m.id]&&(stH!=='label'||stA!=='label');
+      const hasPen = hasScore && sc.penH!==undefined && sc.penA!==undefined;
+      const fH = TEAM_FLAGS[teamH]||''; const fA = TEAM_FLAGS[teamA]||'';
       html += `<div class="match-card${isFinal||isMT?' paraguay':''}">
         <div class="match-card-header">
-          <span>${dt.date}${dt.dayMark} · 🏟 ${m.st}</span>
-          <span class="time">${dt.time}</span>
+          <span style="color:#444">${dt.date}${dt.dayMark} · <span style="color:#555;font-weight:500">🏟 ${m.st}</span></span>
+          <span class="time" style="color:#333">${dt.time}</span>
         </div>
         <div class="match-body" onclick="openModal('${m.id}','ko')" style="cursor:pointer">
-          <div class="team-name team-home" style="${tStyle(stH)}">${teamH}${isMT&&teamH===myTeam?' '+flag:''}</div>
+          <div class="team-name team-home" style="${tStyle(stH)}">${fH} ${teamH}${isMT&&teamH===myTeam?' '+flag:''}</div>
           <div class="score-area">
             <div class="score-box ${hasScore?'filled':''}">${hasScore?sc.h:''}</div>
             <span class="score-colon">:</span>
             <div class="score-box ${hasScore?'filled':''}">${hasScore?sc.a:''}</div>
           </div>
-          <div class="team-name team-away" style="${tStyle(stA)}">${teamA}${isMT&&teamA===myTeam?' '+flag:''}</div>
+          <div class="team-name team-away" style="${tStyle(stA)}">${fA} ${teamA}${isMT&&teamA===myTeam?' '+flag:''}</div>
         </div>
+        ${hasPen?`<div class="pen-score">pen ${sc.penH}–${sc.penA}</div>`:''}
         <div class="match-footer">${koTeams[m.id]?(hasScore?'✅ Resultado guardado · Tocá para editar':'✏️ Tocá para ingresar resultado'):isProj?'📊 Proyección · Tocá para confirmar resultado':'⏳ Equipos por definir'}</div>
       </div>`;
     });
@@ -1220,13 +1267,27 @@ function openModal(id, type='group'){
   const m = allMatches.find(m=>m.id===id) || MATCHES.find(m=>m.id===id) || KNOCKOUT.flatMap(p=>p.matches).find(m=>m.id===id);
   if(!m) return;
   modalMatchId = id;
+  const isKO = Boolean(KNOCKOUT.flatMap(p=>p.matches).find(x=>x.id===id));
+  let homeLabel=m.h, awayLabel=m.a;
+  if(isKO){
+    if(koTeams[id]){homeLabel=koTeams[id].h;awayLabel=koTeams[id].a;}
+    else{const pred=computeFullBracket();if(pred[id]){homeLabel=pred[id].h||'Por definir';awayLabel=pred[id].a||'Por definir';}}
+  }
   document.getElementById('modalTitle').textContent = 'Resultado del partido';
   document.getElementById('modalSubtitle').textContent = `${m.dt} · ${m.t} · ${m.st}`;
-  document.getElementById('modalHome').textContent = m.h;
-  document.getElementById('modalAway').textContent = m.a;
+  document.getElementById('modalHome').textContent = homeLabel;
+  document.getElementById('modalAway').textContent = awayLabel;
   const sc = getScore(id);
   document.getElementById('modalScoreH').value = sc.h;
   document.getElementById('modalScoreA').value = sc.a;
+  const penSec=document.getElementById('penaltySection');
+  if(isKO){
+    penSec.classList.remove('hidden');
+    document.getElementById('penHomeLabel').textContent=homeLabel;
+    document.getElementById('penAwayLabel').textContent=awayLabel;
+    document.getElementById('modalPenH').value=sc.penH!==undefined?sc.penH:'';
+    document.getElementById('modalPenA').value=sc.penA!==undefined?sc.penA:'';
+  } else { penSec.classList.add('hidden'); }
   document.getElementById('modalOverlay').classList.remove('hidden');
   setTimeout(()=>document.getElementById('modalScoreH').focus(),200);
 }
@@ -1239,7 +1300,13 @@ function saveModal(){
   if(!modalMatchId) return;
   const h=document.getElementById('modalScoreH').value;
   const a=document.getElementById('modalScoreA').value;
-  if(h!==''&&a!=='') scores[modalMatchId]={h,a};
+  if(h!==''&&a!==''){
+    const sc={h,a};
+    const ph=document.getElementById('modalPenH').value;
+    const pa=document.getElementById('modalPenA').value;
+    if(ph!==''&&pa!==''){ sc.penH=ph; sc.penA=pa; }
+    scores[modalMatchId]=sc;
+  }
   document.getElementById('modalOverlay').classList.add('hidden');
   modalMatchId=null;
   refreshAll();

@@ -320,6 +320,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--gris); colo
 }
 
 /* ===== ACTUAL PRINT ===== */
+.pen-score{font-size:.8em;color:#444;text-align:center;font-weight:600;margin:2px 0}
 @media print {
   @page { size: A4 landscape; margin: 0; }
   body { background: white; }
@@ -702,6 +703,11 @@ function computeFullBracket() {
     const t = getT(id);
     if (sh > sa) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
     if (sa > sh) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
+    if (sc.penH !== undefined && sc.penA !== undefined) {
+      const ph = parseInt(sc.penH), pa = parseInt(sc.penA);
+      if (ph > pa) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
+      if (pa > ph) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
+    }
     return { name: null, sure: false, data: true }; // EPD
   }
 
@@ -713,6 +719,11 @@ function computeFullBracket() {
     const t = getT(id);
     if (sh > sa) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
     if (sa > sh) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
+    if (sc.penH !== undefined && sc.penA !== undefined) {
+      const ph = parseInt(sc.penH), pa = parseInt(sc.penA);
+      if (ph > pa) return { name: t.a, sure: t.aS, data: Boolean(t.a) };
+      if (pa > ph) return { name: t.h, sure: t.hS, data: Boolean(t.h) };
+    }
     return { name: null, sure: false, data: true };
   }
 
@@ -885,6 +896,21 @@ function renderBracketView() {
 // =====================================================
 const scores = {};
 const koTeams = {}; // auto-filled from ESPN: {id: {h:'Team A', a:'Team B'}}
+Object.assign(scores,{
+  'R32-1':{h:'1',a:'0'},
+  'R32-2':{h:'2',a:'1'},
+  'R32-3':{h:'1',a:'1',penH:'4',penA:'3'},
+  'R32-4':{h:'1',a:'1',penH:'2',penA:'3'},
+});
+Object.assign(koTeams,{
+  'R32-1':{h:'Canadá',a:'Sudáfrica'},
+  'R32-2':{h:'Brasil',a:'Japón'},
+  'R32-3':{h:'Paraguay',a:'Alemania'},
+  'R32-4':{h:'Países Bajos',a:'Marruecos'},
+  'R32-5':{h:'Costa de Marfil',a:'Noruega'},
+  'R32-6':{h:'Francia',a:'Suecia'},
+  'R32-7':{h:'México',a:'Ecuador'},
+});
 function getScore(id) {
   return scores[id] || {h: '', a: ''};
 }
@@ -1119,6 +1145,8 @@ function renderByDate() {
       const hName = isKO ? (m._hPred || 'Por definir') : m.h;
       const aName = isKO ? (m._aPred || 'Por definir') : m.a;
       const tag = isKO ? m._koTag : m.g;
+      const sc_pd = getScore(m.id);
+      const hasPen_pd = sc_pd.h!==''&&sc_pd.a!==''&&sc_pd.penH!==undefined&&sc_pd.penA!==undefined;
       const isMT = hName===myTeam || aName===myTeam;
       const isLive = liveMatchIds.has(m.id);
       const flag = TEAM_FLAGS[myTeam]||'';
